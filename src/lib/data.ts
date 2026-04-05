@@ -171,17 +171,21 @@ export async function syncRecommendations(userId: string) {
   return recommendations;
 }
 
+type DashboardWarning = { title: string; body: string; tone: "warning" | "danger" };
+
 export async function getDashboardData(userId: string) {
   const context = await getStudentContext(userId);
+  const profile = context.profile;
+  const user = context.user;
 
-  if (!context.profile || !context.user) {
+  if (!profile || !user) {
     return {
-      user: context.user,
+      user,
       profile: null,
       topRecommendations: [],
       shortlistCount: context.shortlists.length,
       applications: context.applications,
-      warnings: [] as Array<{ title: string; body: string; tone: "warning" | "danger" }> 
+      warnings: [] as DashboardWarning[]
     };
   }
 
@@ -193,7 +197,7 @@ export async function getDashboardData(userId: string) {
 
   const warnings = warningCandidates
     .map((college) => {
-      const score = evaluateRecommendation(context.profile, college, context.weights);
+      const score = evaluateRecommendation(profile, college, context.weights);
 
       if (score.roiScore < 55) {
         return {
@@ -213,14 +217,14 @@ export async function getDashboardData(userId: string) {
 
       return null;
     })
-    .filter((item): item is { title: string; body: string; tone: "warning" | "danger" } => Boolean(item))
+    .filter((item): item is DashboardWarning => Boolean(item))
     .slice(0, 3);
 
   const headline = topRecommendations[0];
 
   return {
-    user: context.user,
-    profile: context.profile,
+    user,
+    profile,
     topRecommendations,
     shortlistCount: context.shortlists.length,
     applications: context.applications,
@@ -471,5 +475,3 @@ export function buildProfileCompletion(input: {
 export function collegeSlug(name: string) {
   return slugify(name);
 }
-
-
