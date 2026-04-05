@@ -1,10 +1,11 @@
-import { PrismaClient } from "@prisma/client";
+﻿import { PrismaClient } from "@prisma/client";
 
-import { upsertCollege } from "../src/lib/admin";
+import { upsertCollege, type CollegePayload } from "../src/lib/admin";
 import { hashPassword } from "../src/lib/auth/password";
 import { collegeInclude, profileInclude } from "../src/lib/data";
 import { defaultScoringWeights } from "../src/lib/scoring/default-weights";
 import { evaluateRecommendation } from "../src/lib/scoring/engine";
+import { type CollegeForScoring, type ProfileForScoring } from "../src/lib/scoring/types";
 
 const prisma = new PrismaClient();
 
@@ -120,8 +121,10 @@ const studentProfiles = [
   }
 ] as const;
 
-function buildCollegePayload(base: (typeof collegeBases)[number], index: number) {
+function buildCollegePayload(base: (typeof collegeBases)[number], index: number): CollegePayload {
   const [name, slug, city, totalFees, averageSalary, riskLevel, type, acceptedExamCodes, specializationNames] = base;
+  const acceptedExamCodeList: string[] = [...acceptedExamCodes];
+  const specializationList: string[] = [...specializationNames];
   const livingCostAnnual = city === "Mumbai" ? 500000 : city === "Bengaluru" ? 420000 : 300000;
   const medianSalary = Math.round(averageSalary * 0.92);
   const highestSalary = Math.round(averageSalary * 1.8);
@@ -129,7 +132,7 @@ function buildCollegePayload(base: (typeof collegeBases)[number], index: number)
   const paybackPeriod = Number(((totalFees + livingCostAnnual * 2) / averageSalary).toFixed(1));
   const recruiters = recruiterPool.slice(index % 4, (index % 4) + 5);
   const sectors = sectorPool.slice(index % 3, (index % 3) + 4);
-  const topRoles = specializationNames.slice(0, 3).map((item) => {
+  const topRoles = specializationList.slice(0, 3).map((item) => {
     if (item === "Consulting") return "Associate Consultant";
     if (item === "Product") return "Product Manager";
     if (item === "Finance") return "Finance Associate";
@@ -161,16 +164,16 @@ function buildCollegePayload(base: (typeof collegeBases)[number], index: number)
     website: `https://example.com/${slug}`,
     logoText: name.replace(/[^A-Z]/g, "").slice(0, 4) || name.slice(0, 3).toUpperCase(),
     featured: index < 6,
-    acceptedExamCodes: [...acceptedExamCodes],
-    specializationNames: [...specializationNames],
+    acceptedExamCodes: acceptedExamCodeList,
+    specializationNames: specializationList,
     recruiterNames: recruiters,
     sectorNames: sectors,
     topRoles,
-    consultingShare: specializationNames.includes("Consulting") ? 24 : 12,
-    financeShare: specializationNames.includes("Finance") ? 22 : 10,
-    analyticsShare: specializationNames.includes("Business Analytics") ? 20 : 10,
-    productShare: specializationNames.includes("Product") ? 18 : 8,
-    operationsShare: specializationNames.includes("Operations") ? 16 : 10,
+    consultingShare: specializationList.includes("Consulting") ? 24 : 12,
+    financeShare: specializationList.includes("Finance") ? 22 : 10,
+    analyticsShare: specializationList.includes("Business Analytics") ? 20 : 10,
+    productShare: specializationList.includes("Product") ? 18 : 8,
+    operationsShare: specializationList.includes("Operations") ? 16 : 10,
     internationalPlacementRate: riskLevel === "ASPIRATIONAL" ? 12 : riskLevel === "BALANCED" ? 6 : 2
   };
 }
@@ -223,7 +226,7 @@ async function seedReferenceData() {
 
 async function seedColleges() {
   for (const [index, college] of collegeBases.entries()) {
-    await upsertCollege(buildCollegePayload(college, index) as any);
+    await upsertCollege(buildCollegePayload(college, index));
   }
 }
 
@@ -295,7 +298,7 @@ async function seedUsersAndProfiles() {
     });
 
     await prisma.achievement.createMany({
-      data: student.achievements.map(([type, title]) => ({ studentProfileId: profile.id, type: type as any, title }))
+      data: student.achievements.map(([type, title]) => ({ studentProfileId: profile.id, type, title }))
     });
 
     const [specialization, preferredLocation, budgetMin, budgetMax, riskAppetite, fundingMode, targetRole, preferredSectors] = student.preference;
@@ -306,8 +309,8 @@ async function seedUsersAndProfiles() {
         preferredLocation,
         budgetMin,
         budgetMax,
-        riskAppetite: riskAppetite as any,
-        fundingMode: fundingMode as any,
+        riskAppetite,
+        fundingMode,
         targetRole,
         preferredSectors: [...preferredSectors]
       }
@@ -354,8 +357,10 @@ async function seedOperationalData() {
     const profile = await prisma.studentProfile.findUnique({ where: { userId: user.id }, include: profileInclude });
     if (!profile) continue;
 
+    const scoringProfile = profile as ProfileForScoring;
+
     const topRecommendations = colleges
-      .map((college) => ({ college, result: evaluateRecommendation(profile as any, college as any, weights) }))
+      .map((college) => ({ college, result: evaluateRecommendation(scoringProfile, college as CollegeForScoring, weights) }))
       .sort((left, right) => right.result.finalRecommendationScore - left.result.finalRecommendationScore)
       .slice(0, 5);
 
@@ -393,3 +398,6 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+
+
