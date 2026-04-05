@@ -80,6 +80,16 @@ ARCH=$(uname -m)
 if [ "$ARCH" = "aarch64" ]; then FILE=docker-compose-linux-aarch64; else FILE=docker-compose-linux-x86_64; fi
 curl -SL "https://github.com/docker/compose/releases/latest/download/$FILE" -o ~/.docker/cli-plugins/docker-compose
 chmod +x ~/.docker/cli-plugins/docker-compose
+```
+
+If `docker compose build` later says Buildx is missing or too old, install Buildx manually as well:
+
+```bash
+mkdir -p ~/.docker/cli-plugins
+ARCH=$(uname -m)
+if [ "$ARCH" = "aarch64" ]; then BUILDX_FILE=buildx-v0.30.1.linux-arm64; else BUILDX_FILE=buildx-v0.30.1.linux-amd64; fi
+curl -SL "https://github.com/docker/buildx/releases/download/v0.30.1/$BUILDX_FILE" -o ~/.docker/cli-plugins/docker-buildx
+chmod +x ~/.docker/cli-plugins/docker-buildx
 exit
 ```
 
@@ -205,6 +215,7 @@ Cheapest approach:
 - optionally add Route 53 and a domain
 
 That will not be fully free if you buy a domain or keep a Route 53 hosted zone.
+
 
 
 

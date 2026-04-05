@@ -1,8 +1,15 @@
+﻿import { type Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
+
+type ApplicationWithCollege = Prisma.ApplicationGetPayload<{
+  include: {
+    college: true;
+  };
+}>;
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -37,7 +44,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   return NextResponse.json({ ok: true });
 }
 
-function serializeApplication(application: any) {
+function serializeApplication(application: ApplicationWithCollege) {
   return {
     id: application.id,
     collegeId: application.collegeId,

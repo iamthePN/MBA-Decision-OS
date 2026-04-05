@@ -1,9 +1,16 @@
+﻿import { type Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { applicationSchema } from "@/lib/validations";
+
+type ApplicationWithCollege = Prisma.ApplicationGetPayload<{
+  include: {
+    college: true;
+  };
+}>;
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -44,7 +51,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ application: serializeApplication(application) });
 }
 
-function serializeApplication(application: any) {
+function serializeApplication(application: ApplicationWithCollege) {
   return {
     id: application.id,
     collegeId: application.collegeId,

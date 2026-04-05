@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -101,9 +101,7 @@ export function AdminCollegeManager({ colleges: initialColleges }: { colleges: C
   const {
     register,
     reset,
-    handleSubmit,
-    setValue,
-    watch
+    handleSubmit
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -289,7 +287,7 @@ export function AdminCollegeManager({ colleges: initialColleges }: { colleges: C
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold">College catalog</h2>
-              <p className="text-sm text-muted-foreground">{colleges.length} colleges in catalog · {featuredCount} featured on landing page</p>
+              <p className="text-sm text-muted-foreground">{colleges.length} colleges in catalog | {featuredCount} featured on landing page</p>
             </div>
             <div className="flex items-center gap-3">
               <Input type="file" accept=".csv" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
@@ -429,3 +427,6 @@ export function AdminCollegeManager({ colleges: initialColleges }: { colleges: C
     </div>
   );
 }
+
+
+

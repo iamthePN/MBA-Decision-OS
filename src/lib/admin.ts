@@ -1,4 +1,4 @@
-import { type Prisma } from "@prisma/client";
+﻿import { type Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
 import { collegeInclude } from "@/lib/data";
@@ -41,24 +41,39 @@ export type CollegePayload = {
 
 async function ensureNamedEntities<T extends { name: string }>(
   values: string[],
-  findMany: (args: Prisma.ExamTypeFindManyArgs | Prisma.SpecializationFindManyArgs | Prisma.RecruiterFindManyArgs | Prisma.SectorFindManyArgs) => Promise<T[]>,
-  create: (args: any) => Promise<T>
+  findMany: (names: string[]) => Promise<T[]>,
+  create: (name: string) => Promise<T>
 ) {
   const uniqueValues = Array.from(new Set(values.filter(Boolean)));
-  const existing = await findMany({ where: { name: { in: uniqueValues } } } as never);
+  const existing = await findMany(uniqueValues);
   const existingNames = new Set(existing.map((item) => item.name));
 
   for (const value of uniqueValues) {
     if (!existingNames.has(value)) {
-      await create({ data: { name: value, description: `${value} catalog entry` } });
+      await create(value);
     }
   }
 }
 
 export async function upsertCollege(payload: CollegePayload) {
-  await ensureNamedEntities(payload.specializationNames, prisma.specialization.findMany, prisma.specialization.create);
-  await ensureNamedEntities(payload.recruiterNames, prisma.recruiter.findMany, (args) => prisma.recruiter.create({ ...args, data: { ...args.data, category: "Employer" } }));
-  await ensureNamedEntities(payload.sectorNames, prisma.sector.findMany, prisma.sector.create);
+  await ensureNamedEntities(
+    payload.specializationNames,
+    (names) => prisma.specialization.findMany({ where: { name: { in: names } } }),
+    (name) => prisma.specialization.create({ data: { name, description: `${name} catalog entry` } })
+  );
+  await ensureNamedEntities(
+    payload.recruiterNames,
+    (names) => prisma.recruiter.findMany({ where: { name: { in: names } } }),
+    (name) =>
+      prisma.recruiter.create({
+        data: { name, description: `${name} catalog entry`, category: "Employer" }
+      })
+  );
+  await ensureNamedEntities(
+    payload.sectorNames,
+    (names) => prisma.sector.findMany({ where: { name: { in: names } } }),
+    (name) => prisma.sector.create({ data: { name, description: `${name} catalog entry` } })
+  );
 
   const examCodes = Array.from(new Set(payload.acceptedExamCodes));
   const exams = await prisma.examType.findMany({ where: { code: { in: examCodes } } });
@@ -219,7 +234,11 @@ export async function upsertCollege(payload: CollegePayload) {
   return serializeCollege(hydrated);
 }
 
-export function serializeCollege(college: Awaited<ReturnType<typeof prisma.college.findUniqueOrThrow>> & any) {
+type HydratedCollege = Prisma.CollegeGetPayload<{
+  include: typeof collegeInclude;
+}>;
+
+export function serializeCollege(college: HydratedCollege) {
   return {
     id: college.id,
     slug: college.slug,
@@ -243,10 +262,10 @@ export function serializeCollege(college: Awaited<ReturnType<typeof prisma.colle
     website: college.website,
     logoText: college.logoText,
     featured: college.featured,
-    examCodes: college.examAcceptances?.map((item: any) => item.examType.code) ?? [],
-    specializations: college.specializations?.map((item: any) => item.specialization.name) ?? [],
-    recruiters: college.recruiters?.map((item: any) => item.recruiter.name) ?? [],
-    sectors: college.sectors?.map((item: any) => item.sector.name) ?? [],
+    examCodes: college.examAcceptances?.map((item) => item.examType.code) ?? [],
+    specializations: college.specializations?.map((item) => item.specialization.name) ?? [],
+    recruiters: college.recruiters?.map((item) => item.recruiter.name) ?? [],
+    sectors: college.sectors?.map((item) => item.sector.name) ?? [],
     topRoles: college.placementStat?.topRoles ?? [],
     consultingShare: college.placementStat?.consultingShare ?? 0,
     financeShare: college.placementStat?.financeShare ?? 0,
@@ -256,3 +275,4 @@ export function serializeCollege(college: Awaited<ReturnType<typeof prisma.colle
     internationalPlacementRate: college.placementStat?.internationalPlacementRate ?? 0
   };
 }
+
