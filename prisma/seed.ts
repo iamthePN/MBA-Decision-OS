@@ -210,7 +210,7 @@ async function seedReferenceData() {
   await prisma.examType.createMany({
     data: examTypes.map(([code, name, maxScore, benchmarkScore]) => ({ code, name, maxScore, benchmarkScore, description: `${name} seeded for demo use` }))
   });
-  await prisma.scoringWeight.createMany({ data: defaultScoringWeights });
+  await prisma.scoringWeight.createMany({ data: defaultScoringWeights.map((weight) => ({ ...weight })) });
   await prisma.pricingPlan.createMany({ data: pricingPlans });
   await prisma.testimonial.createMany({
     data: testimonials.map(([name, role, program, quote, outcome]) => ({ name, role, program, quote, outcome, featured: true }))
@@ -398,6 +398,7 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
 
 
 
