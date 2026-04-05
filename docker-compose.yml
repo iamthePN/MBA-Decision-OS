@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mba_decision_os
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mba_decision_os"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mba_decision_os?schema=public
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: change-me-before-production
+      APP_NAME: MBA Decision OS
+      APP_URL: http://localhost:3000
+      ENABLE_EMAIL_NOTIFICATIONS: "false"
+      EMAIL_PROVIDER: console
+      EMAIL_FROM: noreply@mbadecisionos.local
+      ENABLE_FILE_STORAGE: "false"
+      STORAGE_PROVIDER: local
+      ENABLE_ANALYTICS: "false"
+      ANALYTICS_PROVIDER: console
+      ENABLE_AI_SUMMARIES: "false"
+      AI_PROVIDER: mock
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:

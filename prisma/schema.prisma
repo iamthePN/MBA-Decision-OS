@@ -1,0 +1,388 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+enum RiskAppetite {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CollegeType {
+  PRIVATE
+  PUBLIC
+  AUTONOMOUS
+  GLOBAL
+}
+
+enum CollegeRiskLevel {
+  SAFE
+  BALANCED
+  ASPIRATIONAL
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  INTERVIEW
+  WAITLIST
+  ADMIT
+  REJECT
+}
+
+enum AchievementType {
+  LEADERSHIP
+  EXTRACURRICULAR
+  CERTIFICATION
+  INTERNSHIP
+  AWARD
+}
+
+enum MessageStatus {
+  NEW
+  REVIEWED
+  RESPONDED
+}
+
+enum FundingMode {
+  SELF_FUNDED
+  EDUCATION_LOAN
+  SCHOLARSHIP
+  HYBRID
+}
+
+model User {
+  id            String           @id @default(cuid())
+  name          String
+  email         String           @unique
+  passwordHash  String
+  role          UserRole         @default(STUDENT)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  studentProfile StudentProfile?
+  recommendations Recommendation[]
+  shortlists    Shortlist[]
+  applications  Application[]
+}
+
+model StudentProfile {
+  id                    String            @id @default(cuid())
+  userId                String            @unique
+  country               String
+  academicHistory       String?
+  undergradInstitution  String?
+  undergradDegree       String?
+  tenthScore            Float
+  twelfthScore          Float
+  undergraduateScore    Float
+  workExperienceMonths  Int               @default(0)
+  currentJobRole        String?
+  profileCompletion     Int               @default(0)
+  scholarshipNeed       Boolean           @default(false)
+  targetIntakeYear      Int
+  shortTermGoals        String
+  longTermGoals         String
+  preferredIndustries   String[]
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  educationRecords      EducationRecord[]
+  examScores            ExamScore[]
+  workExperiences       WorkExperience[]
+  achievements          Achievement[]
+  preference            Preference?
+}
+
+model EducationRecord {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  level            String
+  institution      String
+  board            String?
+  specialization   String?
+  score            Float
+  graduationYear   Int?
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+}
+
+model ExamType {
+  id              String                 @id @default(cuid())
+  code            String                 @unique
+  name            String
+  maxScore        Float
+  benchmarkScore  Float
+  description     String?
+  examScores      ExamScore[]
+  acceptedBy      CollegeExamAcceptance[]
+}
+
+model ExamScore {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  examTypeId       String
+  score            Float
+  percentile       Float?
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  examType         ExamType       @relation(fields: [examTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([studentProfileId, examTypeId])
+}
+
+model WorkExperience {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  company          String
+  role             String
+  industry         String
+  durationMonths   Int
+  isCurrent        Boolean        @default(false)
+  summary          String?
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+}
+
+model Achievement {
+  id               String          @id @default(cuid())
+  studentProfileId String
+  type             AchievementType
+  title            String
+  description      String?
+  studentProfile   StudentProfile  @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+}
+
+model Specialization {
+  id          String                 @id @default(cuid())
+  name        String                 @unique
+  description String?
+  colleges    CollegeSpecialization[]
+  preferences Preference[]
+}
+
+model Preference {
+  id                   String          @id @default(cuid())
+  studentProfileId     String          @unique
+  specializationId     String?
+  preferredLocation    String
+  budgetMin            Float
+  budgetMax            Float
+  riskAppetite         RiskAppetite
+  fundingMode          FundingMode     @default(SELF_FUNDED)
+  targetRole           String?
+  preferredSectors     String[]
+  studentProfile       StudentProfile  @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  specialization       Specialization? @relation(fields: [specializationId], references: [id], onDelete: SetNull)
+}
+
+model College {
+  id                String                 @id @default(cuid())
+  slug              String                 @unique
+  name              String
+  location          String
+  city              String
+  country           String
+  overview          String
+  totalFees         Float
+  livingCostAnnual  Float
+  averageSalary     Float
+  medianSalary      Float
+  highestSalary     Float
+  placementRate     Float
+  paybackPeriod     Float
+  intakeSize        Int
+  durationMonths    Int
+  type              CollegeType
+  riskLevel         CollegeRiskLevel
+  rankingNote       String?
+  website           String?
+  logoText          String
+  featured          Boolean                @default(false)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  examAcceptances   CollegeExamAcceptance[]
+  placementStat     PlacementStat?
+  specializations   CollegeSpecialization[]
+  recruiters        CollegeRecruiter[]
+  sectors           CollegeSector[]
+  recommendations   Recommendation[]
+  shortlists        Shortlist[]
+  applications      Application[]
+}
+
+model CollegeExamAcceptance {
+  id            String   @id @default(cuid())
+  collegeId     String
+  examTypeId    String
+  minScore      Float
+  typicalScore  Float
+  college       College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  examType      ExamType @relation(fields: [examTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([collegeId, examTypeId])
+}
+
+model PlacementStat {
+  id                         String   @id @default(cuid())
+  collegeId                  String   @unique
+  averageSalary              Float
+  medianSalary               Float
+  highestSalary              Float
+  placementRate              Float
+  consultingShare            Float
+  financeShare               Float
+  analyticsShare             Float
+  productShare               Float
+  operationsShare            Float
+  internationalPlacementRate Float
+  topRoles                   String[]
+  college                    College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+}
+
+model Recruiter {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  category    String
+  description String?
+  colleges    CollegeRecruiter[]
+}
+
+model CollegeRecruiter {
+  collegeId   String
+  recruiterId String
+  college     College   @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  recruiter   Recruiter @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+
+  @@id([collegeId, recruiterId])
+}
+
+model Sector {
+  id          String         @id @default(cuid())
+  name        String         @unique
+  description String?
+  colleges    CollegeSector[]
+}
+
+model CollegeSector {
+  collegeId      String
+  sectorId       String
+  hiringStrength Float
+  college        College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  sector         Sector  @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+
+  @@id([collegeId, sectorId])
+}
+
+model CollegeSpecialization {
+  collegeId         String
+  specializationId  String
+  strength          Float
+  college           College        @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  specialization    Specialization @relation(fields: [specializationId], references: [id], onDelete: Cascade)
+
+  @@id([collegeId, specializationId])
+}
+
+model Recommendation {
+  id                     String   @id @default(cuid())
+  userId                 String
+  collegeId              String
+  finalScore             Float
+  matchScore             Float
+  admissionProbability   Float
+  roiScore               Float
+  placementScore         Float
+  careerAlignmentScore   Float
+  riskCompatibilityScore Float
+  reason                 String
+  createdAt              DateTime @default(now())
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  college                College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, collegeId])
+}
+
+model Shortlist {
+  id        String   @id @default(cuid())
+  userId    String
+  collegeId String
+  note      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  college   College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, collegeId])
+}
+
+model Application {
+  id         String            @id @default(cuid())
+  userId     String
+  collegeId  String
+  status     ApplicationStatus @default(DRAFT)
+  deadline   DateTime?
+  note       String?
+  feesPaid   Float             @default(0)
+  nextStep   String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  college    College           @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, collegeId])
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  status    MessageStatus @default(NEW)
+  createdAt DateTime      @default(now())
+}
+
+model Testimonial {
+  id         String   @id @default(cuid())
+  name       String
+  role       String
+  program    String
+  quote      String
+  outcome    String
+  featured   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model PricingPlan {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  priceMonthly Float
+  priceYearly  Float?
+  description  String
+  features     String[]
+  ctaLabel     String
+  highlighted  Boolean  @default(false)
+}
+
+model AdminSetting {
+  id          String @id @default(cuid())
+  key         String @unique
+  value       String
+  description String?
+}
+
+model ScoringWeight {
+  id          String @id @default(cuid())
+  key         String @unique
+  label       String
+  group       String
+  value       Float
+  description String?
+}

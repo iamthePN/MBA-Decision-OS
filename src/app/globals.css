@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 43%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 146 60% 34%;
+    --primary: 146 65% 28%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 200 34% 92%;
+    --secondary-foreground: 222 47% 11%;
+    --accent: 176 58% 36%;
+    --accent-foreground: 0 0% 100%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --success: 142 70% 35%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 95% 44%;
+    --warning-foreground: 0 0% 100%;
+    --danger: 0 72% 45%;
+    --danger-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+    --muted: 217 33% 16%;
+    --muted-foreground: 214 20% 75%;
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 146 60% 40%;
+    --primary: 146 55% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 218 28% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --accent: 176 55% 42%;
+    --accent-foreground: 0 0% 100%;
+    --card: 222 47% 10%;
+    --card-foreground: 210 40% 98%;
+    --success: 142 66% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 34 95% 52%;
+    --warning-foreground: 0 0% 100%;
+    --danger: 0 70% 56%;
+    --danger-foreground: 0 0% 100%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image: radial-gradient(circle at top left, rgba(22, 101, 52, 0.07), transparent 28%), radial-gradient(circle at top right, rgba(13, 148, 136, 0.08), transparent 24%);
+  }
+
+  a {
+    @apply transition-colors;
+  }
+}
+
+@layer components {
+  .container-shell {
+    @apply mx-auto max-w-7xl px-6 lg:px-8;
+  }
+
+  .glass-panel {
+    @apply rounded-[32px] border border-border/70 bg-background/80 shadow-soft backdrop-blur-xl;
+  }
+
+  .section-kicker {
+    @apply text-xs font-semibold uppercase tracking-[0.28em] text-primary;
+  }
+
+  .gradient-title {
+    @apply bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent;
+  }
+}

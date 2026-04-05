@@ -1,0 +1,2 @@
+name,slug,location,city,country,totalFees,livingCostAnnual,averageSalary,medianSalary,highestSalary,placementRate,paybackPeriod,type,riskLevel,acceptedExamCodes,specializations,recruiters,sectors,topRoles,featured
+Demo MBA School,demo-mba-school,"Bengaluru, India",Bengaluru,India,1800000,350000,1900000,1750000,3200000,91,2.1,PRIVATE,BALANCED,"CAT,GMAT","Marketing,Finance,Product","Deloitte,Amazon","Consulting,Technology","Associate Consultant,Product Manager",false
